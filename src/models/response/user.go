@@ -1,13 +1,18 @@
 package responsemodel
 
+type UserAll struct {
+	Users []User `json:"users"`
+	Total int    `json:"count"`
+}
+
 type User struct {
-	UserID   string  `json:"user_id"`
-	UserName string  `json:"user_name"`
-	Age      int     `json:"age"`
-	Gender   int     `json:"gender"`
-	UserType int     `json:"user_type"`
-	Status   string  `json:"status"`
-	Address  Address `json:"address"`
+	UserID   string   `json:"user_id"`
+	UserName string   `json:"user_name"`
+	Age      int      `json:"age"`
+	Gender   int      `json:"gender"`
+	UserType int      `json:"user_type"`
+	Status   string   `json:"status"`
+	Address  *Address `json:"address"`
 }
 
 type Address struct {

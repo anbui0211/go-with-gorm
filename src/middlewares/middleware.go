@@ -1,6 +1,7 @@
 package middlewares
 
 import (
+	iauth "gwg/internal/auth"
 	icontext "gwg/internal/context"
 	db "gwg/src/database"
 
@@ -17,5 +18,14 @@ func DBConnect(c *gin.Context) {
 
 	}
 	c.Set(icontext.DataBaseContext, conn)
+	c.Next()
+}
+
+func SetUser(c *gin.Context) {
+	user := iauth.User{
+		ID:   "US0",
+		Name: "Ân",
+	}
+	c.Set(icontext.UserKeyContext, user)
 	c.Next()
 }

@@ -1,22 +1,26 @@
 package dao
 
 import (
+	"errors"
 	ilogger "gwg/internal/logger"
 	"gwg/src/entity"
 
 	"gorm.io/gorm"
 )
 
-type UserListGetter interface {
-	OnUserListGetter(conn *gorm.DB, count int32, rec entity.User) error
+type UserListGetterWith interface {
+	OnUserListGetterWith(conn *gorm.DB, count int32, user entity.User, location entity.Location) error
 }
 
 type User struct{}
 
-func (User) GetList(conn *gorm.DB, svcFunc UserListGetter) (err error) {
+func (User) GetListWith(conn *gorm.DB, svcFunc UserListGetterWith) (err error) {
 	rows, err := conn.Table("users as u ").
-		Select("users.*, locations.location_id, locations.full_address, locations.province, locations.district, locations.ward").
-		Joins("LEFT JOIN locations ON users.location_id = locations.location_id").
+		Select("u.*, " +
+			"l.location_id AS l_location_id, l.full_address AS l_full_address, " +
+			"l.province AS l_province, l.district AS l_district, l.ward AS l_ward").
+		Joins("LEFT JOIN locations AS l " +
+			"ON u.location_id = l.location_id").
 		Rows()
 	if err != nil {
 		ilogger.Error("UserDao - GetList", ilogger.LogData{
@@ -29,7 +33,10 @@ func (User) GetList(conn *gorm.DB, svcFunc UserListGetter) (err error) {
 	var count int32
 	for rows.Next() {
 		count++
-		var rec entity.User
+		var rec struct {
+			User     entity.User     `gorm:"embedded"`
+			Location entity.Location `gorm:"embedded;embeddedPrefix:l_"`
+		}
 
 		err = conn.ScanRows(rows, &rec)
 		if err != nil {
@@ -38,7 +45,7 @@ func (User) GetList(conn *gorm.DB, svcFunc UserListGetter) (err error) {
 			})
 		}
 
-		err = svcFunc.OnUserListGetter(conn, count, rec)
+		err = svcFunc.OnUserListGetterWith(conn, count, rec.User, rec.Location)
 		if err != nil {
 			ilogger.Error("UserDao - OnUserListGetter", ilogger.LogData{
 				"err": err,
@@ -48,4 +55,21 @@ func (User) GetList(conn *gorm.DB, svcFunc UserListGetter) (err error) {
 	}
 
 	return
+}
+
+func (User) Get(conn *gorm.DB, userID string) (rec entity.User, err error) {
+	result := conn.
+		Where(&entity.User{UserID: userID}, "UserID").
+		Take(&rec)
+	if result.Error != nil {
+		ilogger.Error("UserDao - Get", ilogger.LogData{
+			"userID": userID,
+			"err":    err,
+		})
+		if errors.Is(result.Error, gorm.ErrRecordNotFound) {
+			return rec, result.Error
+		}
+	}
+
+	return rec, nil
 }
