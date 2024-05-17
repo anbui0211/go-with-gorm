@@ -23,7 +23,7 @@ func DBConnect(c *gin.Context) {
 
 func SetUser(c *gin.Context) {
 	user := iauth.User{
-		ID:   "US0",
+		ID:   "US01",
 		Name: "Ân",
 	}
 	c.Set(icontext.UserKeyContext, user)

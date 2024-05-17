@@ -6,6 +6,7 @@ import (
 	"gwg/src/entity"
 
 	"gorm.io/gorm"
+	"gorm.io/gorm/clause"
 )
 
 type UserListGetterWith interface {
@@ -72,4 +73,15 @@ func (User) Get(conn *gorm.DB, userID string) (rec entity.User, err error) {
 	}
 
 	return rec, nil
+}
+
+func (User) Lock(conn *gorm.DB, userID string) (locked entity.User, err error) {
+	result := conn.Clauses(clause.Locking{Strength: "UPDATE", Options: "NOWAIT"}).
+		Where(&entity.User{UserID: userID}, "UserID").
+		Take(&locked)
+	if result.Error != nil {
+		return locked, result.Error
+	}
+
+	return locked, nil
 }
